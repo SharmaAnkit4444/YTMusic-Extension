@@ -60,7 +60,7 @@ This extension connects to an open **YouTube Music tab** and interacts with the 
 
 ---
 
-### ⚙️ Installation (Local Setup)
+## ⚙️ Installation (Local Setup)
 
 1. Clone the repository:
    ```bash
@@ -70,12 +70,17 @@ This extension connects to an open **YouTube Music tab** and interacts with the 
   chrome://extensions/Enable Developer Mode (top right)
 
 3.Enable Developer Mode (top right)
+
 4.Click Load unpacked
+
 5.Select the project folder
+
 6.Open YouTube Music:
   https://music.youtube.com/
+
 7.Click the extension icon and now you can control your music.
 
+---
 
 ## 🤝 Contributing
 Feel free to fork this repo and improve it!
