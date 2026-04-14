@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Music Controller",
+  "version": "1.0",
+  "description": "Control YouTube Music from a compact popup",
+  "permissions": ["activeTab", "scripting", "tabs"],
+  "host_permissions": ["*://music.youtube.com/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "YouTube Music Controller"
+  },
+  "icons": {
+    "16": "musical-note.png",
+    "48": "musical-note.png",
+    "128": "musical-note.png"
+  }
+}
