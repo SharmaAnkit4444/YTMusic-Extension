@@ -3,14 +3,12 @@ let songTitleEl, artistNameEl;
 let progressFill, currentTimeSpan, durationSpan, volumeSlider;
 let playPauseIcon;
 
-
 let isPlaying = false;
 let currentVolume = 0.75;
 let repeatMode = false;
 let shuffleMode = false;
 
 let ytmTab = null;
-
 let infoPollInterval = null;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -34,14 +32,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (volumeSlider) {
     volumeSlider.value = currentVolume;
+    updateVolumeFill(currentVolume);
   }
 
   checkYTMTab();
-
   attachEventListeners();
-
   startInfoPolling();
+
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
+      e.preventDefault();
+      const activeElement = document.activeElement;
+      const isTyping = activeElement.tagName === 'INPUT' || 
+                       activeElement.tagName === 'TEXTAREA' || 
+                       activeElement.isContentEditable;
+      if (!isTyping) {
+        console.log("Spacebar pressed - toggling play/pause");
+        controlYTM('playPause');
+      }
+    }
+  });
 });
+
+function updateVolumeFill(volume) {
+  if (volumeSlider) {
+    const percent = volume * 100;
+    volumeSlider.style.background = `linear-gradient(90deg, #c084fc 0%, #c084fc ${percent}%, rgba(255, 255, 255, 0.2) ${percent}%, rgba(255, 255, 255, 0.2) 100%)`;
+  }
+}
 
 async function checkYTMTab() {
   try {
@@ -69,10 +87,10 @@ function updateConnectionStatus(isConnected) {
   const extBadge = document.querySelector('.ext-badge');
   if (extBadge) {
     if (isConnected) {
-      extBadge.innerHTML = '🎵 YouTube Music • Connected';
+      extBadge.innerHTML = '🎵 YouTube Music • Active';
       extBadge.style.color = '#c084fc';
     } else {
-      extBadge.innerHTML = '⚠️ Open YouTube Music to control';
+      extBadge.innerHTML = '⚠️ YouTube Music is not Active';
       extBadge.style.color = '#f87171';
     }
   }
@@ -127,9 +145,7 @@ async function fetchCurrentTrackInfo() {
           const progressBar = document.querySelector('#progress-bar');
           if (progressBar) {
             currentTime = parseFloat(progressBar.value) || 0;
-            duration =
-              parseFloat(progressBar.getAttribute('aria-valuemax')) ||
-              parseFloat(progressBar.max) || 0;
+            duration = parseFloat(progressBar.getAttribute('aria-valuemax')) || parseFloat(progressBar.max) || 0;
           }
         }
 
@@ -186,10 +202,7 @@ async function fetchCurrentTrackInfo() {
     }
   } catch (error) {
     console.error("Error fetching track info:", error);
-    if (
-      error.message &&
-      (error.message.includes('Could not find tab') || error.message.includes('No tab'))
-    ) {
+    if (error.message && (error.message.includes('Could not find tab') || error.message.includes('No tab'))) {
       ytmTab = null;
       updateConnectionStatus(false);
       setPlaceholderInfo();
@@ -207,12 +220,9 @@ function formatTime(seconds) {
 function updatePlayPauseIcon(playing) {
   if (!playPauseIcon) return;
   if (playing) {
-    playPauseIcon.innerHTML =
-      '<rect x="6" y="4" width="4" height="16" fill="white" stroke="none"/>' +
-      '<rect x="14" y="4" width="4" height="16" fill="white" stroke="none"/>';
+    playPauseIcon.innerHTML = '<rect x="6" y="4" width="4" height="16" fill="white" stroke="none"/>' + '<rect x="14" y="4" width="4" height="16" fill="white" stroke="none"/>';
   } else {
-    playPauseIcon.innerHTML =
-      '<polygon points="5 3 19 12 5 21 5 3" fill="white" stroke="none"/>';
+    playPauseIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3" fill="white" stroke="none"/>';
   }
   playPauseIcon.setAttribute('viewBox', '0 0 24 24');
 }
@@ -241,10 +251,7 @@ async function controlYTM(action) {
       func: (actionType) => {
         const click = (sel) => {
           const el = document.querySelector(sel);
-          if (el) { 
-            el.click(); 
-            return true; 
-          }
+          if (el) { el.click(); return true; }
           return false;
         };
 
@@ -257,14 +264,12 @@ async function controlYTM(action) {
               }
             }
             break;
-
           case 'nextTrack':
             click('.next-button.style-scope.ytmusic-player-bar') ||
             click('tp-yt-paper-icon-button[aria-label="Next"]') ||
             click('[data-testid="next-button"]') ||
             click('#next-button');
             break;
-
           case 'previousTrack':
             click('.previous-button.style-scope.ytmusic-player-bar') ||
             click('tp-yt-paper-icon-button[aria-label="Previous"]') ||
@@ -279,13 +284,6 @@ async function controlYTM(action) {
     setTimeout(() => fetchCurrentTrackInfo(), 300);
   } catch (error) {
     console.error(`Error controlling YTM (${action}):`, error);
-    if (
-      error.message &&
-      (error.message.includes('Could not find tab') || error.message.includes('No tab'))
-    ) {
-      ytmTab = null;
-      updateConnectionStatus(false);
-    }
   }
 }
 
@@ -300,14 +298,10 @@ async function setYTMVolume(volume) {
       target: { tabId: ytmTab.id },
       func: (vol) => {
         const video = document.querySelector('video');
-        if (video) {
-          video.volume = vol;
-        }
+        if (video) video.volume = vol;
         const slider = document.querySelector('#volume-slider');
         if (slider) {
-          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-            window.HTMLInputElement.prototype, 'value'
-          ).set;
+          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
           nativeInputValueSetter.call(slider, vol * 100);
           slider.dispatchEvent(new Event('input', { bubbles: true }));
           slider.dispatchEvent(new Event('change', { bubbles: true }));
@@ -321,118 +315,50 @@ async function setYTMVolume(volume) {
 }
 
 async function toggleRepeat() {
-  console.log("Toggle repeat called");
-  
   if (!ytmTab) {
     await checkYTMTab();
-    if (!ytmTab) {
-      console.log("No YTM tab found");
-      return;
-    }
+    if (!ytmTab) return;
   }
 
   try {
-    const result = await chrome.scripting.executeScript({
+    await chrome.scripting.executeScript({
       target: { tabId: ytmTab.id },
       func: () => {
-        const selectors = [
-          '#repeat-button',
-          'tp-yt-paper-icon-button[aria-label*="Repeat"]',
-          'button[aria-label*="Repeat"]',
-          '.repeat-button'
-        ];
-        
+        const selectors = ['#repeat-button', 'tp-yt-paper-icon-button[aria-label*="Repeat"]', 'button[aria-label*="Repeat"]'];
         let btn = null;
         for (const selector of selectors) {
           btn = document.querySelector(selector);
-          if (btn) {
-            console.log("Found repeat button with selector:", selector);
-            break;
-          }
+          if (btn) break;
         }
-        
-        if (btn) {
-          btn.click();
-          
-          const clickEvent = new MouseEvent('click', {
-            view: window,
-            bubbles: true,
-            cancelable: true
-          });
-          btn.dispatchEvent(clickEvent);
-          
-          return { success: true, currentState: btn.getAttribute('aria-pressed') };
-        } else {
-          console.log("Repeat button not found with any selector");
-          return { success: false, error: "Button not found" };
-        }
+        if (btn) btn.click();
       }
     });
-
-    console.log("Toggle repeat result:", result);
-    
     setTimeout(() => fetchCurrentTrackInfo(), 400);
-    setTimeout(() => fetchCurrentTrackInfo(), 800); // Double-check after a moment
-    
   } catch (error) {
     console.error("Error toggling repeat:", error);
   }
 }
 
 async function toggleShuffle() {
-  console.log("Toggle shuffle called");
-  
   if (!ytmTab) {
     await checkYTMTab();
-    if (!ytmTab) {
-      console.log("No YTM tab found");
-      return;
-    }
+    if (!ytmTab) return;
   }
 
   try {
-    const result = await chrome.scripting.executeScript({
+    await chrome.scripting.executeScript({
       target: { tabId: ytmTab.id },
       func: () => {
-        const selectors = [
-          '#shuffle-button',
-          'tp-yt-paper-icon-button[aria-label*="Shuffle"]',
-          'button[aria-label*="Shuffle"]',
-          '.shuffle-button'
-        ];
-        
+        const selectors = ['#shuffle-button', 'tp-yt-paper-icon-button[aria-label*="Shuffle"]', 'button[aria-label*="Shuffle"]'];
         let btn = null;
         for (const selector of selectors) {
           btn = document.querySelector(selector);
-          if (btn) {
-            console.log("Found shuffle button with selector:", selector);
-            break;
-          }
+          if (btn) break;
         }
-        
-        if (btn) {
-          btn.click();
-          
-          const clickEvent = new MouseEvent('click', {
-            view: window,
-            bubbles: true,
-            cancelable: true
-          });
-          btn.dispatchEvent(clickEvent);
-          
-          return { success: true, currentState: btn.getAttribute('aria-pressed') };
-        } else {
-          console.log("Shuffle button not found with any selector");
-          return { success: false, error: "Button not found" };
-        }
+        if (btn) btn.click();
       }
     });
-
-    console.log("Toggle shuffle result:", result);
-    
     setTimeout(() => fetchCurrentTrackInfo(), 400);
-    setTimeout(() => fetchCurrentTrackInfo(), 800); // Double-check after a moment
-    
   } catch (error) {
     console.error("Error toggling shuffle:", error);
   }
@@ -440,35 +366,17 @@ async function toggleShuffle() {
 
 function attachEventListeners() {
   if (playPauseBtn) playPauseBtn.addEventListener('click', () => controlYTM('playPause'));
-  if (prevBtn)      prevBtn.addEventListener('click', () => controlYTM('previousTrack'));
-  if (nextBtn)      nextBtn.addEventListener('click', () => controlYTM('nextTrack'));
-  
-  if (shuffleBtn) {
-    shuffleBtn.removeEventListener('click', toggleShuffle); // Remove any existing listener
-    shuffleBtn.addEventListener('click', toggleShuffle);
-    console.log("Shuffle button listener attached");
-  }
-  
-  if (repeatBtn) {
-    repeatBtn.removeEventListener('click', toggleRepeat); // Remove any existing listener
-    repeatBtn.addEventListener('click', toggleRepeat);
-    console.log("Repeat button listener attached");
-  }
-
-  function updateVolumeFill(volume) {
-    if (volumeSlider) {
-      const percent = volume * 100;
-      volumeSlider.style.background = `linear-gradient(90deg, #c084fc 0%, #c084fc ${percent}%, rgba(255, 255, 255, 0.2) ${percent}%, rgba(255, 255, 255, 0.2) 100%)`;
-    }
-  }
+  if (prevBtn) prevBtn.addEventListener('click', () => controlYTM('previousTrack'));
+  if (nextBtn) nextBtn.addEventListener('click', () => controlYTM('nextTrack'));
+  if (shuffleBtn) shuffleBtn.addEventListener('click', toggleShuffle);
+  if (repeatBtn) repeatBtn.addEventListener('click', toggleRepeat);
 
   if (volumeSlider) {
     volumeSlider.addEventListener('input', (e) => {
       currentVolume = parseFloat(e.target.value);
       setYTMVolume(currentVolume);
-      updateVolumeFill(currentVolume); // Add this line
+      updateVolumeFill(currentVolume);
     });
-    updateVolumeFill(currentVolume);
   }
 
   const progressBarBg = document.getElementById('progressBarBg');
@@ -489,26 +397,10 @@ function attachEventListeners() {
             const video = document.querySelector('video');
             if (video && video.duration) {
               video.currentTime = seekPercent * video.duration;
-              return;
-            }
-            const progressBar = document.querySelector('#progress-bar');
-            if (progressBar) {
-              const duration =
-                parseFloat(progressBar.getAttribute('aria-valuemax')) ||
-                parseFloat(progressBar.max) || 0;
-              if (duration > 0) {
-                const nativeSetter = Object.getOwnPropertyDescriptor(
-                  window.HTMLInputElement.prototype, 'value'
-                ).set;
-                nativeSetter.call(progressBar, seekPercent * duration);
-                progressBar.dispatchEvent(new Event('input', { bubbles: true }));
-                progressBar.dispatchEvent(new Event('change', { bubbles: true }));
-              }
             }
           },
           args: [percent]
         });
-
         setTimeout(() => fetchCurrentTrackInfo(), 100);
       } catch (error) {
         console.error("Error seeking:", error);
